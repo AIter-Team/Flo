@@ -1,0 +1,47 @@
+import os
+from datetime import datetime
+
+from langchain.tools import tool
+from langgraph.config import get_stream_writer
+
+from src.config import MEMORY_DIR
+
+
+@tool
+def get_task_instruction(task_name: str) -> dict[str, str]:
+    """
+    Tool for getting task instruction
+
+    Args:
+        task_name (str): Task name
+
+    Returns:
+        dict: A dictionary containing the instruction text.
+              Includes a 'status' key ('success' or 'error').
+              If 'success', includes a 'task_instruction' key.
+              If 'error', includes an 'error_message' key.
+    """
+    writer = get_stream_writer()
+    instruction_path = os.path.join(MEMORY_DIR, f"procedural/{task_name}.txt")
+
+    writer(f"Retrieving `{task_name}` task instruction..")
+    if os.path.exists(instruction_path):
+        with open(instruction_path, "r") as file:
+            return {"status": "success", "task_instruction": file.read()}
+    else:
+        return {
+            "status": "error",
+            "error_message": "There is an error while retrieving file",
+        }
+
+
+@tool
+def get_current_time() -> dict:
+    """Get current time
+
+    Returns:
+        dict: A dictionary containing current timestamp.
+    """
+    writer = get_stream_writer()
+    writer("Retrieving current time..")
+    return {"Current Time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
