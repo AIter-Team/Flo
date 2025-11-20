@@ -5,7 +5,7 @@ from langchain_openai import ChatOpenAI
 
 from src.agents.root.state import State
 from src.tools.handoffs import handoff_to_root_agent
-from src.tools.quant import write_transaction
+from src.tools.quant import write_transaction, update_balance
 from src.tools.utils import get_current_time, get_task_instruction
 
 load_dotenv()
@@ -19,9 +19,11 @@ model = ChatOpenAI(
 
 @dynamic_prompt
 def personalized_prompt(request: ModelRequest) -> str:
+
     user_name = request.state.get("user_name", "User")
     user_language = request.state.get("user_language", "English")
     user_currency = request.state.get("user_currency", "USD")
+    user_balance = request.state.get("user_balance", 0)
 
     return f"""
     **Introduction**
@@ -54,11 +56,13 @@ def personalized_prompt(request: ModelRequest) -> str:
     - DON'T USE MARKDOWN FORMAT TO WRITE YOUR RESPONSE
 
     --REMINDER--
-    REMEMBER. After you're done with your task you should ALWAYS hand over back to the main agent using `handoff_to_agent` tool
+    REMEMBER. After you're done with your task you should ALWAYS hand over back to the root agent using `handoff_to_root_agent` tool
+    DON'T say anything after done your task, just hand over to the root agent, and it will be summarizing your result to the user.
 
     --User Information--
     <user_info>
     Name: {user_name}
+    Balance: {user_balance}
     </user_info>
 
     --User Preference--
@@ -77,6 +81,8 @@ quant_agent = create_agent(
         get_task_instruction,
         write_transaction,
         handoff_to_root_agent,
+        update_balance
     ],
+    state_schema=State,
     middleware=[personalized_prompt],
 )

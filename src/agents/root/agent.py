@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from langchain_core.messages import AnyMessage, SystemMessage
+from langchain_core.messages import AnyMessage, SystemMessage, HumanMessage
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, START
@@ -17,19 +17,23 @@ from .state import State
 
 checkpointer = InMemorySaver()
 
-FLO = client.pull_prompt("flo-root", include_model=True)
+FLO = client.pull_prompt("flo/flo", include_model=True)
 
 tools = [create_handoff_tool(agent_name="quant_agent")]
-model = ChatOpenAI(model="gpt-4.1-mini").bind_tools(tools)
-
 
 async def root_agent(state: State):
     """LLM decides whether to call a tool or not"""
 
     return {
         "messages": [
-            await model.ainvoke(
-                [SystemMessage(content=FLO.first.messages[0].prompt.template)]
+            await FLO.last.ainvoke(
+                FLO.first.invoke(
+                    {
+                        "user_currency": "IDR",
+                        "user_language": "English",
+                        "user_name": "Revito"
+                    }
+                ).messages
                 + state.messages
             )
         ],

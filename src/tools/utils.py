@@ -44,4 +44,4 @@ def get_current_time() -> dict:
     """
     writer = get_stream_writer()
     writer("Retrieving current time..")
-    return {"Current Time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+    return {"current_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
