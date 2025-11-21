@@ -81,24 +81,33 @@ def write_transaction(
         }
 
 
+@tool(description="Check user balance")
+def check_balance() -> dict[str, str]:
+    writer = get_stream_writer()
+
+    writer("Retrieving user balance..")
+    with open(os.path.join(MEMORY_DIR, "semantic", "profile.json"), "r") as file:
+        data = json.load(file)
+
+    return {"status": "success", "balance": data["finance"].get("balance", 0)}
+
+
 @tool(description="Update user balance")
-def update_balance(amount: int, runtime: ToolRuntime) -> tuple[dict[str, str], Command]:
+def update_balance(amount: int, runtime: ToolRuntime) -> dict[str, str]:
     writer = get_stream_writer()
 
     with open(os.path.join(MEMORY_DIR, "semantic", "profile.json"), "r") as file:
         data = json.load(file)
 
     writer("Calculating current balance..")
-    new_balance = data["profile"].get("user_balance", 0) + amount
+    new_balance = data["finance"].get("balance", 0) + amount
 
     writer("Updating balance..")
     with open(os.path.join(MEMORY_DIR, "semantic", "profile.json"), "w") as file:
-        data["profile"]["user_balance"] = new_balance
+        data["finance"]["balance"] = new_balance
         data = json.dump(data, file, indent=4)
 
-    return {"status": "success", "current_balance": new_balance}, Command(
-        update={"user_balance": new_balance}
-    )
+    return {"status": "success", "current_balance": new_balance}
 
 
 def time_value_calculator():

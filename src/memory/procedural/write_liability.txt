@@ -1,0 +1,35 @@
+**Task Instruction**
+
+1. Check user liabilities using `get_user_liabilities` tool to check all the liabilities that user currently have
+
+2. Analyze Liability Type: Determine the type of liability the user intends to add. There are three main types:
+
+- Debt (High-interest loans, Credit Cards, Car Loan) → Tool: insert_debt
+- Installment (Buy Now Pay Later, Fixed-term plans) → Tool: insert_installment
+- Subscription (Recurring monthly/yearly services) → Tool: insert_subscription
+
+3. Extract Required Data: Extract the mandatory information needed for the relevant tool.
+
+- For Debt: Extract name, total_amount (Initial total), interest_rate (APR as string, e.g., "0.18").
+- For Installment: Extract item_name, original_price (Full original price), monthly_payment (Fixed monthly cost), total_installments (Total number of payments).
+- For Subscription: Extract name, monthly_cost (Recurring cost per month).
+
+4. Extract Optional Data: Extract optional data like payment_due_day (Debt/Installment), min_monthly_payment (Debt), next_billing_date (Subscription), and notes.
+
+5. Confirmation and Verification:
+
+- Data Confirmation: Display the extracted liability data to the user for confirmation, ONLY if all required data from Step 2 is complete.
+- Format Confirmation: Present the data clearly (Name, Amount, Interest/Installment, Due Date, etc.) but DO NOT use Markdown.
+- Notes Query: Ask if the user wants to add optional notes (notes).
+
+6. Execution:
+
+- Call the appropriate tool (insert_debt, insert_installment, or insert_subscription).
+- Ensure numerical values (total_amount, interest_rate, monthly_cost, original_price, monthly_payment) are passed as strings as required by the tool signatures for Decimal conversion.
+
+**Tool Needed**
+
+- insert_debt: Use this to record high-interest debt (loans, credit cards) for the Debt Destroyer feature.
+- insert_installment: Use this to record installment plans/BNPL for Installment Impact analysis.
+- insert_subscription: Use this to record recurring subscription services for the Zombie Subscription Hunter.
+

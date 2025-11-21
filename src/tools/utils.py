@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from typing import Any
 
 from langchain.tools import tool
 from langgraph.config import get_stream_writer
@@ -28,6 +29,40 @@ def get_task_instruction(task_name: str) -> dict[str, str]:
     if os.path.exists(instruction_path):
         with open(instruction_path, "r") as file:
             return {"status": "success", "task_instruction": file.read()}
+    else:
+        return {
+            "status": "error",
+            "error_message": "There is an error while retrieving file",
+        }
+
+
+@tool
+def check_available_instruction() -> dict[str, Any]:
+    """
+    Tool for checking available task instruction
+
+    Returns:
+        dict: A dictionary containing the instruction text.
+              Includes a 'status' key ('success' or 'error').
+              If 'success', includes a 'task_instruction' key.
+              If 'error', includes an 'error_message' key.
+    """
+    instruction = []
+    writer = get_stream_writer()
+
+    instruction_path = os.path.join(MEMORY_DIR, "procedural")
+
+
+
+    if os.path.exists(instruction_path):
+        writer(f"Retrieving all available instruction..")
+        for dir in os.scandir(instruction_path):
+            instruction.append(dir.name.split('.')[0])
+
+        return {
+            "status": "success",
+            "instruction_list": instruction
+        }
     else:
         return {
             "status": "error",

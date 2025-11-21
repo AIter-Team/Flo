@@ -1,7 +1,9 @@
+from langchain_core.runnables.configurable import RunnableConfigurableFields
 import asyncio
 import json
 import logging
 import os
+import uuid
 
 from dotenv import load_dotenv
 from langchain_core.messages import AIMessageChunk, HumanMessage
@@ -28,10 +30,10 @@ def setup_database():
         logger.info("Database already exists. Skipping initialization.")
 
 
-async def call_agent_async(message: str, profile: dict):
+async def call_agent_async(message: str, profile: dict, thread_id: str):
     async for _, stream_mode, chunk in flo.astream(
         {"messages": [HumanMessage(content=message)], **profile},
-        {"configurable": {"thread_id": "1"}},
+        {"configurable": {"thread_id": thread_id}},
         stream_mode=["messages", "custom"],
         subgraphs=True,
     ):
@@ -44,6 +46,8 @@ async def call_agent_async(message: str, profile: dict):
 
 
 async def main():
+    thread_id = str(uuid.uuid4())
+
     with open(os.path.join(MEMORY_DIR, "semantic", "profile.json"), "r") as file:
         data = json.load(file)
 
@@ -55,7 +59,7 @@ async def main():
             break
 
         print("Flo: ", end="")
-        await call_agent_async(user_input, data["profile"])
+        await call_agent_async(user_input, data["profile"], thread_id)
         print("\n")
 
 

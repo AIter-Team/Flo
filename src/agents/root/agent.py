@@ -9,6 +9,7 @@ from langgraph.graph.state import CompiledStateGraph, StateGraph
 from langgraph.prebuilt import ToolNode
 from typing_extensions import Literal
 
+from src.agents.capitalist import capitalist_agent
 from src.agents.quant import quant_agent
 from src.agents.state import State
 from src.tools.handoffs import handoff_to_agent
@@ -40,9 +41,11 @@ async def root_agent(state: State):
     }
 
 
-def entry_routing(state: State) -> Literal["quant_agent", "root_agent"]:
+def entry_routing(state: State) -> Literal["quant_agent", "capitalist_agent", "root_agent"]:
     if state.active_agent == "quant_agent":
         return "quant_agent"
+    elif state.active_agent == "capitalist_agent":
+        return "capitalist_agent"
     else:
         return "root_agent"
 
@@ -61,8 +64,9 @@ graph = StateGraph(State)
 graph.add_node("root_agent", root_agent)
 graph.add_node("tool_node", ToolNode(tools))
 graph.add_node("quant_agent", quant_agent)
+graph.add_node("capitalist_agent", capitalist_agent)
 
-graph.add_conditional_edges(START, entry_routing, ["quant_agent", "root_agent"])
+graph.add_conditional_edges(START, entry_routing, ["quant_agent", "capitalist_agent", "root_agent"])
 graph.add_conditional_edges("root_agent", should_continue, ["tool_node", END])
 
 flo = graph.compile(checkpointer=checkpointer)

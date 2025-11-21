@@ -1,0 +1,1 @@
+from .agent import capitalist_agent
