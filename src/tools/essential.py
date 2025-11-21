@@ -1,11 +1,46 @@
 import os
 from datetime import datetime
-from typing import Any
+from typing_extensions import Annotated, Any
 
+
+from langchain.messages import ToolMessage
+from langchain.tools import InjectedState, InjectedToolCallId, tool
+from langgraph.types import Command
 from langchain.tools import tool
 from langgraph.config import get_stream_writer
 
 from src.config import MEMORY_DIR
+from src.agents.state import State
+
+
+@tool("transfer_to_agent", description="Handoff control to another agent")
+def handoff_to_agent(
+    agent_name: str,
+    state: Annotated[State, InjectedState],
+    tool_call_id: Annotated[str, InjectedToolCallId],
+):
+    tool_message = ToolMessage(
+        content=f"Successfully transferred to {agent_name}",
+        name="transfer_to_agent",
+        tool_call_id=tool_call_id,
+    )
+    if agent_name == "root_agent":
+        return Command(
+            goto=agent_name,
+            graph=Command.PARENT,
+            update={
+                "messages": state.messages + [tool_message],
+                "active_agent": agent_name,
+            },
+        )
+    else:
+        return Command(
+            goto=agent_name,
+            update={
+                "messages": state.messages + [tool_message],
+                "active_agent": agent_name,
+            },
+        )
 
 
 @tool

@@ -4,8 +4,8 @@ from langchain.agents.middleware import ModelRequest, dynamic_prompt
 from langchain_openai import ChatOpenAI
 
 from src.agents.state import State
-from src.tools.handoffs import handoff_to_agent
-from src.tools import *
+from src.tools import handoff_to_agent, get_current_time, get_task_instruction, check_available_instruction
+from src.tools.quant import *
 from src.utils import client
 
 load_dotenv()
@@ -36,10 +36,15 @@ quant_agent = create_agent(
     name="quant_agent",
     model=QUANT.last.bound,
     tools=[
+        # Essential tools
         get_current_time,
         get_task_instruction,
-        write_transaction,
+        check_available_instruction,
         handoff_to_agent,
+
+        # Quant tools
+        # update_avg_salary,
+        write_transaction,
         update_balance,
         check_balance,
         check_budget,
