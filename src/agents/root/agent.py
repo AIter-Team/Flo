@@ -10,7 +10,7 @@ from langgraph.prebuilt import ToolNode
 from typing_extensions import Literal
 
 from src.agents.quant import quant_agent
-from src.tools.handoffs import create_handoff_tool
+from src.tools.handoffs import handoff_to_agent
 from src.utils import client
 
 from .state import State
@@ -19,7 +19,7 @@ checkpointer = InMemorySaver()
 
 FLO = client.pull_prompt("flo/flo", include_model=True)
 
-tools = [create_handoff_tool(agent_name="quant_agent")]
+tools = [handoff_to_agent]
 
 async def root_agent(state: State):
     """LLM decides whether to call a tool or not"""

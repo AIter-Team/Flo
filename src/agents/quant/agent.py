@@ -4,7 +4,7 @@ from langchain.agents.middleware import ModelRequest, dynamic_prompt
 from langchain_openai import ChatOpenAI
 
 from src.agents.root.state import State
-from src.tools.handoffs import handoff_to_root_agent
+from src.tools.handoffs import handoff_to_agent
 from src.tools.quant import write_transaction, update_balance
 from src.tools.utils import get_current_time, get_task_instruction
 
@@ -50,7 +50,7 @@ def personalized_prompt(request: ModelRequest) -> str:
     1. Identify user queries and use `get_task_instruction` tool to get detailed instructions for doing your task
     2. Read carefully the task instruction and the tool needed.
     3. Do the task based on the instruction
-    4. Handover control to the main agent using transfer_to_root_agent tool
+    4. Handover control to the root_agent using transfer_to_agent tool
 
     **Constraints**
     - DON'T USE MARKDOWN FORMAT TO WRITE YOUR RESPONSE
@@ -80,7 +80,7 @@ quant_agent = create_agent(
         get_current_time,
         get_task_instruction,
         write_transaction,
-        handoff_to_root_agent,
+        handoff_to_agent,
         update_balance
     ],
     state_schema=State,
