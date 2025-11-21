@@ -12,7 +12,7 @@ from typing_extensions import Literal
 from src.agents.capitalist import capitalist_agent
 from src.agents.quant import quant_agent
 from src.agents.state import State
-from src.tools.handoffs import handoff_to_agent
+from src.tools import handoff_to_agent
 from src.utils import client
 
 checkpointer = InMemorySaver()
