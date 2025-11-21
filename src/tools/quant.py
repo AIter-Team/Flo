@@ -109,6 +109,56 @@ def update_balance(amount: int, runtime: ToolRuntime) -> dict[str, str]:
 
     return {"status": "success", "current_balance": new_balance}
 
+@tool(description="Get user budget")
+def check_budget() -> dict[str, dict]:
+    writer = get_stream_writer()
+
+    writer("Retrieving user budget..")
+    with open(os.path.join(MEMORY_DIR, "semantic", "profile.json"), "r") as file:
+        data = json.load(file)
+
+    budget = data['finance'].get('budget', {})
+
+    return {"status": "success", "user_budget": budget}
+
+@tool(description="Update user budget")
+def update_budget(
+    living: int,
+    transportation: int,
+    food_n_drink: int,
+    health_n_insurance: int,
+    education: int,
+    entertainment: int,
+    miscellaneous: int,
+    liabilities: int,
+    saving_n_investment: int
+    ):
+    writer = get_stream_writer()
+
+    with open(os.path.join(MEMORY_DIR, "semantic", "profile.json"), "r") as file:
+        data = json.load(file)
+
+    writer("Inserting new budget..")
+    budget = {
+      "living": living,
+      "transportation": transportation,
+      "food_&_drink": food_n_drink,
+      "health_&_insurance": health_n_insurance,
+      "education": education,
+      "entertainment": entertainment,
+      "miscellaneous": miscellaneous,
+      "liabilities": liabilities,
+      "saving_&_investment": saving_n_investment
+    }
+
+    writer("Updating budget..")
+    with open(os.path.join(MEMORY_DIR, "semantic", "profile.json"), "w") as file:
+        data["finance"]["budget"] = budget
+        data = json.dump(data, file, indent=4)
+
+
+
+
 
 def time_value_calculator():
     pass

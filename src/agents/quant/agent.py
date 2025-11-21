@@ -5,8 +5,7 @@ from langchain_openai import ChatOpenAI
 
 from src.agents.state import State
 from src.tools.handoffs import handoff_to_agent
-from src.tools.quant import check_balance, update_balance, write_transaction
-from src.tools.utils import get_current_time, get_task_instruction
+from src.tools import *
 from src.utils import client
 
 load_dotenv()
@@ -43,6 +42,8 @@ quant_agent = create_agent(
         handoff_to_agent,
         update_balance,
         check_balance,
+        check_budget,
+        update_budget
     ],
     state_schema=State,
     middleware=[personalized_prompt],

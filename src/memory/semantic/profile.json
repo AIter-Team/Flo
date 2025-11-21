@@ -1,22 +1,22 @@
 {
-  "profile": {
-    "user_name": "Revito",
-    "user_language": "English",
-    "user_currency": "IDR"
-  },
-  "finance": {
-    "balance": 0,
-    "avg_salary": 0,
-    "budget": {
-      "living": 0,
-      "transportation": 0,
-      "food_&_drink": 0,
-      "health_&_insurance": 0,
-      "education": 0,
-      "entertainment": 0,
-      "miscellaneous": 0,
-      "liabilities": 0,
-      "saving_&_investment": 0
+    "profile": {
+        "user_name": "Revito",
+        "user_language": "English",
+        "user_currency": "IDR"
+    },
+    "finance": {
+        "balance": 0,
+        "avg_salary": 0,
+        "budget": {
+            "living": 1000000,
+            "transportation": 0,
+            "food_&_drink": 0,
+            "health_&_insurance": 0,
+            "education": 0,
+            "entertainment": 0,
+            "miscellaneous": 0,
+            "liabilities": 0,
+            "saving_&_investment": 0
+        }
     }
-  }
 }
