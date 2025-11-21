@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from langchain_core.messages import AnyMessage, SystemMessage, HumanMessage
+from langchain_core.messages import AnyMessage, HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, START
@@ -10,16 +10,16 @@ from langgraph.prebuilt import ToolNode
 from typing_extensions import Literal
 
 from src.agents.quant import quant_agent
+from src.agents.state import State
 from src.tools.handoffs import handoff_to_agent
 from src.utils import client
-
-from .state import State
 
 checkpointer = InMemorySaver()
 
 FLO = client.pull_prompt("flo/flo", include_model=True)
 
 tools = [handoff_to_agent]
+
 
 async def root_agent(state: State):
     """LLM decides whether to call a tool or not"""
@@ -31,7 +31,7 @@ async def root_agent(state: State):
                     {
                         "user_currency": "IDR",
                         "user_language": "English",
-                        "user_name": "Revito"
+                        "user_name": "Revito",
                     }
                 ).messages
                 + state.messages

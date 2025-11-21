@@ -12,3 +12,12 @@ wheels/
 
 # Log
 logs/
+
+# Notebook
+*.ipynb
+
+# Database
+*.db
+
+# DS_Store
+*.DS_Store

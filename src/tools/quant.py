@@ -8,8 +8,8 @@ from langgraph.config import get_stream_writer
 from langgraph.types import Command
 from typing_extensions import Optional
 
-from src.config.directory_config import MEMORY_DIR
-from src.database import Session, Transaction
+from src.config import MEMORY_DIR, Session
+from src.database import Transaction
 
 
 @tool("write_transaction")

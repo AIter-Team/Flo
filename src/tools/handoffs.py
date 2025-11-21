@@ -1,9 +1,9 @@
 from langchain.messages import ToolMessage
-from langchain.tools import BaseTool, InjectedState, InjectedToolCallId, tool
+from langchain.tools import InjectedState, InjectedToolCallId, tool
 from langgraph.types import Command
 from typing_extensions import Annotated
 
-from src.agents.root.state import State
+from src.agents.state import State
 
 
 @tool("transfer_to_agent", description="Handoff control to another agent")
@@ -32,5 +32,5 @@ def handoff_to_agent(
             update={
                 "messages": state.messages + [tool_message],
                 "active_agent": agent_name,
-        },
-    )
+            },
+        )

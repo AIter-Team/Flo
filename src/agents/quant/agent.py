@@ -3,9 +3,9 @@ from langchain.agents import create_agent
 from langchain.agents.middleware import ModelRequest, dynamic_prompt
 from langchain_openai import ChatOpenAI
 
-from src.agents.root.state import State
+from src.agents.state import State
 from src.tools.handoffs import handoff_to_agent
-from src.tools.quant import write_transaction, update_balance
+from src.tools.quant import update_balance, write_transaction
 from src.tools.utils import get_current_time, get_task_instruction
 
 load_dotenv()
@@ -19,7 +19,6 @@ model = ChatOpenAI(
 
 @dynamic_prompt
 def personalized_prompt(request: ModelRequest) -> str:
-
     user_name = request.state.get("user_name", "User")
     user_language = request.state.get("user_language", "English")
     user_currency = request.state.get("user_currency", "USD")
@@ -81,7 +80,7 @@ quant_agent = create_agent(
         get_task_instruction,
         write_transaction,
         handoff_to_agent,
-        update_balance
+        update_balance,
     ],
     state_schema=State,
     middleware=[personalized_prompt],
