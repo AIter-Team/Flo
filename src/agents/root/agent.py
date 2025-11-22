@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from langchain_core.messages import AnyMessage, HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.store.memory import InMemoryStore
 from langgraph.graph import END, START
 from langgraph.graph.message import add_messages
 from langgraph.graph.state import CompiledStateGraph, StateGraph
@@ -10,12 +11,14 @@ from langgraph.prebuilt import ToolNode
 from typing_extensions import Literal
 
 from src.agents.capitalist import capitalist_agent
+from src.agents.strategist import strategist_agent
 from src.agents.quant import quant_agent
 from src.agents.state import State
 from src.tools import handoff_to_agent
 from src.utils import client
 
 checkpointer = InMemorySaver()
+store = InMemoryStore()
 
 FLO = client.pull_prompt("flo/flo", include_model=True)
 
@@ -30,9 +33,9 @@ async def root_agent(state: State):
             await FLO.last.ainvoke(
                 FLO.first.invoke(
                     {
-                        "user_currency": "IDR",
-                        "user_language": "English",
-                        "user_name": "Revito",
+                        "user_currency": state.user_currency,
+                        "user_language": state.user_language,
+                        "user_name": state.user_name,
                     }
                 ).messages
                 + state.messages
@@ -41,11 +44,13 @@ async def root_agent(state: State):
     }
 
 
-def entry_routing(state: State) -> Literal["quant_agent", "capitalist_agent", "root_agent"]:
+def entry_routing(state: State) -> Literal["quant_agent", "capitalist_agent", "strategist_agent", "root_agent"]:
     if state.active_agent == "quant_agent":
         return "quant_agent"
     elif state.active_agent == "capitalist_agent":
         return "capitalist_agent"
+    elif state.active_agent == "strategist_agent":
+        return "strategist_agent"
     else:
         return "root_agent"
 
@@ -65,8 +70,9 @@ graph.add_node("root_agent", root_agent)
 graph.add_node("tool_node", ToolNode(tools))
 graph.add_node("quant_agent", quant_agent)
 graph.add_node("capitalist_agent", capitalist_agent)
+graph.add_node("strategist_agent", strategist_agent)
 
-graph.add_conditional_edges(START, entry_routing, ["quant_agent", "capitalist_agent", "root_agent"])
+graph.add_conditional_edges(START, entry_routing, ["quant_agent", "capitalist_agent", "strategist_agent", "root_agent"])
 graph.add_conditional_edges("root_agent", should_continue, ["tool_node", END])
 
-flo = graph.compile(checkpointer=checkpointer)
+flo = graph.compile(checkpointer=checkpointer, store=store)
