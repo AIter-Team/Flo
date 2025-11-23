@@ -2,7 +2,7 @@ import logging
 import os
 import sys
 
-from .directory_config import LOGGING_DIR
+from .directory import LOGGING_DIR
 
 
 def setup_logging():

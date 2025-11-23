@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 from langchain.tools import tool
 from langgraph.config import get_stream_writer
 
-from src.config import Session
+from src.config.database import Session
 from src.database import Debt, Installment, Liability, Subscription
 
 
@@ -227,6 +227,7 @@ def insert_subscription(
             "status": "error",
             "error_message": f"Failed to insert Subscription: {e}",
         }
+
 
 @tool("get_user_liabilities")
 def get_user_liabilities() -> Dict[str, Any]:

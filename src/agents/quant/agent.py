@@ -1,16 +1,18 @@
 from dotenv import load_dotenv
 from langchain.agents import create_agent
 from langchain.agents.middleware import ModelRequest, dynamic_prompt
-from langchain_openai import ChatOpenAI
 
 from src.agents.state import State
-from src.tools import handoff_to_agent, get_current_time, get_task_instruction, check_available_instruction
+from src.config.agents import QUANT
+from src.tools import (
+    check_available_instructions,
+    get_current_time,
+    get_task_instruction,
+    handoff_to_agent,
+)
 from src.tools.quant import *
-from src.utils import client
 
 load_dotenv()
-
-QUANT = client.pull_prompt("flo/quant-agent", include_model=True)
 
 
 @dynamic_prompt
@@ -32,14 +34,14 @@ def personalized_prompt(request: ModelRequest) -> str:
     )
 
 
-quant_agent = create_agent(
-    name="quant_agent",
+quant = create_agent(
+    name="quant",
     model=QUANT.last.bound,
     tools=[
         # Essential tools
         get_current_time,
         get_task_instruction,
-        check_available_instruction,
+        check_available_instructions,
         handoff_to_agent,
 
         # Quant tools
@@ -48,7 +50,7 @@ quant_agent = create_agent(
         update_balance,
         check_balance,
         check_budget,
-        update_budget
+        update_budget,
     ],
     state_schema=State,
     middleware=[personalized_prompt],

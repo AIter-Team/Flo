@@ -1,13 +1,16 @@
-from src.utils import client
 from langchain.agents import create_agent
-from langchain_openai import ChatOpenAI
-from langchain.agents.middleware import dynamic_prompt, ModelRequest
+from langchain.agents.middleware import ModelRequest, dynamic_prompt
 
 from src.agents.state import State
-from src.tools import handoff_to_agent, get_current_time, get_task_instruction, check_available_instruction
+from src.config.agents import CAPITALIST
+from src.tools import (
+    check_available_instructions,
+    get_current_time,
+    get_task_instruction,
+    handoff_to_agent,
+)
 from src.tools.capitalist import *
 
-CAPITALIST = client.pull_prompt("flo/capitalist-agent", include_model=True)
 
 @dynamic_prompt
 def personalized_prompt(request: ModelRequest) -> str:
@@ -28,22 +31,21 @@ def personalized_prompt(request: ModelRequest) -> str:
     )
 
 
-capitalist_agent = create_agent(
-    name="capitalist_agent",
+capitalist = create_agent(
+    name="capitalist",
     model=CAPITALIST.last.bound,
     tools=[
         # Essential tools
         get_current_time,
         get_task_instruction,
-        check_available_instruction,
+        check_available_instructions,
         handoff_to_agent,
-
         # Capitalist tools
-        insert_debt, 
-        insert_installment, 
-        insert_subscription, 
-        get_user_liabilities
+        insert_debt,
+        insert_installment,
+        insert_subscription,
+        get_user_liabilities,
     ],
     state_schema=State,
-    middleware=[personalized_prompt]
+    middleware=[personalized_prompt],
 )

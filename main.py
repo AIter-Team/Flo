@@ -1,15 +1,14 @@
-from langchain_core.runnables.configurable import RunnableConfigurableFields
 import asyncio
 import json
 import logging
 import os
 import uuid
-
 from dotenv import load_dotenv
 from langchain_core.messages import AIMessageChunk, HumanMessage
 
 from src.agents import flo
-from src.config import DB_PATH, MEMORY_DIR, engine, initialize_db
+from src.config.database import engine, initialize_db
+from src.config.directory import DB_PATH, MEMORY_DIR
 
 load_dotenv()
 logger = logging.getLogger(__name__)

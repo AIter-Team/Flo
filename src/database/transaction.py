@@ -4,7 +4,7 @@ from typing import Optional
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import DECIMAL, TIMESTAMP, String
 
-from src.config.db_config import Base
+from src.config.database import Base
 
 
 class Transaction(Base):

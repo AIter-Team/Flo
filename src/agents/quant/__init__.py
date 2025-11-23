@@ -1,1 +1,1 @@
-from .agent import quant_agent
+from .agent import quant

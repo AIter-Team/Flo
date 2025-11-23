@@ -1,1 +1,1 @@
-from .agent import strategist_agent
+from .agent import strategist

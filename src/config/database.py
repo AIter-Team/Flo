@@ -4,12 +4,10 @@ import os
 from sqlalchemy.engine import Engine, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-from .directory_config import MEMORY_DIR
+from .directory import DB_PATH
 
 logger = logging.getLogger(__name__)
 
-
-DB_PATH = os.path.join(MEMORY_DIR, "semantic", "userdata.db")
 DB_URL = f"sqlite:///{DB_PATH}"
 
 logger.info(f"Database URL configured: {DB_URL}")

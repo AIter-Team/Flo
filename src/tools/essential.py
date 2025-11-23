@@ -1,16 +1,14 @@
 import os
 from datetime import datetime
-from typing_extensions import Annotated, Any
-
 
 from langchain.messages import ToolMessage
 from langchain.tools import InjectedState, InjectedToolCallId, tool
-from langgraph.types import Command
-from langchain.tools import tool
 from langgraph.config import get_stream_writer
+from langgraph.types import Command
+from typing_extensions import Annotated, Any
 
-from src.config import MEMORY_DIR
 from src.agents.state import State
+from src.config.directory import MEMORY_DIR
 
 
 @tool("transfer_to_agent", description="Handoff control to another agent")
@@ -42,7 +40,6 @@ def handoff_to_agent(
             },
         )
 
-
 @tool
 def get_task_instruction(task_name: str) -> dict[str, str]:
     """
@@ -72,14 +69,14 @@ def get_task_instruction(task_name: str) -> dict[str, str]:
 
 
 @tool
-def check_available_instruction() -> dict[str, Any]:
+def check_available_instructions() -> dict[str, Any]:
     """
     Tool for checking available task instruction
 
     Returns:
         dict: A dictionary containing the instruction text.
               Includes a 'status' key ('success' or 'error').
-              If 'success', includes a 'task_instruction' key.
+              If 'success', includes a 'instruction_list' key.
               If 'error', includes an 'error_message' key.
     """
     instruction = []
@@ -87,17 +84,12 @@ def check_available_instruction() -> dict[str, Any]:
 
     instruction_path = os.path.join(MEMORY_DIR, "procedural")
 
-
-
     if os.path.exists(instruction_path):
         writer(f"Retrieving all available instruction..")
         for dir in os.scandir(instruction_path):
-            instruction.append(dir.name.split('.')[0])
+            instruction.append(dir.name.split(".")[0])
 
-        return {
-            "status": "success",
-            "instruction_list": instruction
-        }
+        return {"status": "success", "instruction_list": instruction}
     else:
         return {
             "status": "error",

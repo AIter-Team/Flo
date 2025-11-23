@@ -1,1 +1,1 @@
-from .agent import capitalist_agent
+from .agent import capitalist
