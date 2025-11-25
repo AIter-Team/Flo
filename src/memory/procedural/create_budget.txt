@@ -1,0 +1,44 @@
+**Task Instruction**
+
+Step 1. Check user average income using `get_avg_income` tool. This average income will be used as a reference for creating a budget.
+
+Step 2. Determine budget creation method user want to use
+
+Budget creation can be done in two ways
+
+First (User-defined budget): User already have their budget categories and allocation for each category
+Second (Flo-defined budget): Automatic budget creation based on user average income and their expense.
+
+Step 3. Gather the budget data
+
+**User-defined budget**
+
+First, Ask user to input their budget category with its description.
+
+Second, Ask user to input their budget allocation for each category.
+
+**Flo-defined budget**
+
+First, Use `read_user_transaction` tool to read user transaction data.
+
+Second, Categorize those expense based on common categories.
+
+Third, Determine the allocation for each category based on user average income and their expense.
+
+Step 4. Makesure that total budget allocation is not higher than user average income.
+
+Step 5. Write the data with respect to this sample format
+
+{
+    [category_name]: {
+        "description": [category_description],
+        "allocation": [allocation_amount]
+    },
+    ...
+}
+
+Step 6. Use `update_budget` tool to update the user budget.
+
+**REMINDER**
+- ALWAYS use `update_budget` tool to update the user budget.
+- Total budget allocation should not be higher than user average income.

@@ -125,40 +125,30 @@ def check_budget() -> dict[str, dict]:
 
 
 @tool(description="Update user budget")
-def update_budget(
-    living: int,
-    transportation: int,
-    food_n_drink: int,
-    health_n_insurance: int,
-    education: int,
-    entertainment: int,
-    miscellaneous: int,
-    liabilities: int,
-    saving_n_investment: int,
-):
+def update_budget(budget: dict):
     writer = get_stream_writer()
 
     with open(os.path.join(MEMORY_DIR, "semantic", "profile.json"), "r") as file:
         data = json.load(file)
 
     writer("Inserting new budget..")
-    budget = {
-        "living": living,
-        "transportation": transportation,
-        "food_&_drink": food_n_drink,
-        "health_&_insurance": health_n_insurance,
-        "education": education,
-        "entertainment": entertainment,
-        "miscellaneous": miscellaneous,
-        "liabilities": liabilities,
-        "saving_&_investment": saving_n_investment,
-    }
+    budget = budget
 
     writer("Updating budget..")
     with open(os.path.join(MEMORY_DIR, "semantic", "profile.json"), "w") as file:
         data["finance"]["budget"] = budget
         data = json.dump(data, file, indent=4)
 
+
+@tool(description="Retrieve user average income")
+def get_avg_income() -> dict[str, str]:
+    writer = get_stream_writer()
+
+    writer("Retrieving user average income..")
+    with open(os.path.join(MEMORY_DIR, "semantic", "profile.json"), "r") as file:
+        data = json.load(file)
+
+    return {"status": "success", "avg_income": data["finance"].get("avg_salary", 0)}
 
 def time_value_calculator():
     pass

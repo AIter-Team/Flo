@@ -8,15 +8,22 @@
         "balance": 0,
         "avg_salary": 0,
         "budget": {
-            "living": 1000000,
-            "transportation": 0,
-            "food_&_drink": 0,
-            "health_&_insurance": 0,
-            "education": 0,
-            "entertainment": 0,
-            "miscellaneous": 0,
-            "liabilities": 0,
-            "saving_&_investment": 0
+            "Food": {
+                "description": "User defined budget category Food",
+                "allocation": 500000
+            },
+            "Transport": {
+                "description": "User defined budget category Transport",
+                "allocation": 300000
+            },
+            "Saving Spending": {
+                "description": "User defined budget category Saving Spending",
+                "allocation": 200000
+            },
+            "Living": {
+                "description": "User defined budget category Living",
+                "allocation": 1000000
+            }
         }
     }
 }

@@ -45,7 +45,7 @@ quant = create_agent(
         handoff_to_agent,
 
         # Quant tools
-        # update_avg_salary,
+        get_avg_income,
         write_transaction,
         update_balance,
         check_balance,
