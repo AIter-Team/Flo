@@ -1,0 +1,39 @@
+**Task:** Update Investment Portfolio
+
+**Goal:** Modify existing investment records to reflect changes in quantity, price, or status, ensuring both USD and Local Currency values are maintained.
+
+**Steps:**
+1. **Retrieve Current State:**
+   - **ALWAYS** call `get_user_investments` first.
+   - You need the exact `name`, current `quantity`, and current prices to calculate weighted averages if necessary.
+
+2. **Analyze the Request:**
+   - **Case A: Relative Change ("I bought 2 more Apple stocks at $150")**
+     - Calculate the new total `quantity`.
+     - Calculate the new `average_buy_price_usd` (weighted average of old holdings + new purchase).
+     - **CRITICAL:** If the user provides the price in their local currency (e.g., IDR), calculate/estimate the `average_buy_price_user_currency` as well.
+   
+   - **Case B: Market Price Update ("Bitcoin is now $45k")**
+     - Update `current_market_price` (usually tracked in USD).
+   
+   - **Case C: Maturity ("My Bond matured")**
+     - Set `is_active=False` for Fixed Deposits.
+
+3. **Select the Tool:**
+   
+   - **For Assets (Stocks, Crypto):** -> Use `update_asset`
+     - `quantity`: New total quantity.
+     - `average_buy_price_usd`: New weighted average price in USD.
+     - `average_buy_price_user_currency`: New weighted average price in User's Currency.
+     - `current_market_price`: Latest market value (USD).
+
+   - **For Fixed Deposits (Bonds, CDs):** -> Use `update_fixed_deposit`
+     - `principal_amount`, `interest_rate`, `maturity_date`, or `is_active`.
+
+4. **Execution:**
+   - Ensure specific names match exactly what was returned in Step 1.
+   - Pass all monetary values as strings.
+   - If updating an Asset's buy price, try to update **both** the USD and User Currency fields if the data is available to keep them in sync.
+
+5. **Confirmation:**
+   - Confirm the update to the user (e.g., "Updated Apple Stock. You now hold 12 shares. New Avg Price: $145.").

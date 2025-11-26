@@ -6,7 +6,6 @@ from sqlalchemy.types import DECIMAL, TIMESTAMP, String
 
 from src.config.database import Base
 
-
 class Transaction(Base):
     __tablename__ = "transactions"
     id: Mapped[int] = mapped_column(primary_key=True, index=True)

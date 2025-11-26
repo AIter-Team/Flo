@@ -40,11 +40,19 @@ capitalist = create_agent(
         get_task_instruction,
         check_available_instructions,
         handoff_to_agent,
-        # Capitalist tools
+
+        # Liabilities tools
         insert_debt,
         insert_installment,
         insert_subscription,
         get_user_liabilities,
+
+        # Investments tools
+        insert_asset,
+        insert_fixed_deposit,
+        get_user_investments,
+        update_asset,
+        update_fixed_deposit,
     ],
     state_schema=State,
     middleware=[personalized_prompt],

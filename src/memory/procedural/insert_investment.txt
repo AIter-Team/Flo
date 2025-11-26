@@ -1,0 +1,27 @@
+**Task:** Insert New Investment
+
+**Goal:** Record a new investment holding by selecting the correct tool for the asset type.
+
+**Steps:**
+1. **Analyze Investment Type:**
+   - **Variable Income:** Stocks, Crypto, ETFs -> `insert_asset`
+   - **Fixed Income:** Bonds, CDs -> `insert_fixed_deposit`
+
+2. **Extract Data (Based on Type):**
+   
+   - **If 'insert_asset':**
+     - `name`: Display name (e.g., "Tesla Stock").
+     - `symbol`: Ticker (e.g., "TSLA").
+     - `quantity`: Amount held.
+     - `currency`: User's local currency code (e.g., "IDR", "SGD").
+     - **Price Data (CRITICAL):**
+       - `average_buy_price_usd`: The price paid per unit converted to USD.
+       - `average_buy_price_user_currency`: The price paid per unit in the user's local currency.
+       - *Note: If the user only provides one (e.g., IDR), use the `currency_converter` tool (if available) or approximate the USD value to ensure both fields are filled.*
+
+   - **If 'insert_fixed_deposit':**
+     - `principal_amount`, `interest_rate`, `start_date`, `maturity_date`.
+
+3. **Execution:**
+   - Call the selected tool with all monetary values as strings.
+   - Ensure both USD and Local Currency buy prices are provided for Assets.

@@ -6,7 +6,15 @@ from langchain.tools import tool
 from langgraph.config import get_stream_writer
 
 from src.config.database import Session
-from src.database import Debt, Installment, Liability, Subscription
+from src.database import (
+    Debt,
+    Installment,
+    Liability,
+    Subscription,
+    Asset,
+    FixedDeposit,
+    Investment,
+)
 
 
 @tool("insert_debt")
@@ -302,3 +310,290 @@ def get_user_liabilities() -> Dict[str, Any]:
             "status": "error",
             "error_message": f"Failed to retrieve liabilities: {e}",
         }
+
+@tool("insert_asset")
+def insert_asset(
+    name: str,
+    symbol: str,
+    quantity: str,
+    average_buy_price_usd: str,
+    average_buy_price_user_currency: str,
+    currency: str = "USD",
+    notes: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Insert a variable income asset (Stocks, Crypto, ETFs).
+
+    Args:
+        name (str): Display name (e.g., 'Apple Stock').
+        symbol (str): Ticker symbol.
+        quantity (str): Amount of units/shares.
+        average_buy_price_usd (str): Average price paid per unit in USD.
+        average_buy_price_user_currency (str): Average price paid per unit in User's local currency.
+        currency (str): The local currency code (e.g., 'IDR', 'EUR').
+        notes (str): Optional notes.
+    """
+    writer = get_stream_writer()
+    session = Session()
+
+    try:
+        writer(f"Inserting Asset: {name} ({symbol})...")
+
+        new_asset = Asset(
+            symbol=symbol.upper(),
+            quantity=Decimal(quantity),
+            average_buy_price_usd=Decimal(average_buy_price_usd),
+            average_buy_price_user_currency=Decimal(average_buy_price_user_currency),
+            current_market_price=Decimal(average_buy_price_usd) # Default to USD price
+        )
+        session.add(new_asset)
+        session.flush()
+
+        new_investment = Investment(
+            name=name,
+            investment_type="asset",
+            reference_id=new_asset.id,
+            currency=currency.upper(),
+            notes=notes
+        )
+        session.add(new_investment)
+        session.commit()
+        session.close()
+
+        return {
+            "status": "success",
+            "summary": f"Asset '{name}' recorded. Qty: {quantity} | Avg USD: {average_buy_price_usd} | Avg {currency}: {average_buy_price_user_currency}"
+        }
+    except Exception as e:
+        session.rollback()
+        session.close()
+        return {"status": "error", "error_message": f"Failed to insert Asset: {e}"}
+
+
+@tool("insert_fixed_deposit")
+def insert_fixed_deposit(
+    name: str,
+    principal_amount: str,
+    interest_rate: str,
+    start_date: str,
+    maturity_date: Optional[str] = None,
+    currency: str = "USD",
+    notes: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Insert a fixed income investment (Bonds, CDs, Time Deposits).
+
+    Args:
+        name (str): Display name (e.g., 'Emergency Fund CD', 'Gov Bond').
+        principal_amount (str): Total amount deposited/invested.
+        interest_rate (str): Annual interest rate as decimal (e.g., '0.05' for 5%).
+        start_date (str): Start date in 'YYYY-MM-DD'.
+        maturity_date (str): Optional maturity date in 'YYYY-MM-DD'.
+        currency (str): Currency code (default 'USD').
+        notes (str): Optional notes.
+
+    Returns:
+        dict: Status of the insertion.
+    """
+    writer = get_stream_writer()
+    session = Session()
+
+    try:
+        writer(f"Inserting Fixed Deposit: {name}...")
+
+        # 1. Create Specific Fixed Deposit Record
+        new_fd = FixedDeposit(
+            principal_amount=Decimal(principal_amount),
+            interest_rate=Decimal(interest_rate),
+            start_date=datetime.strptime(start_date, "%Y-%m-%d"),
+            maturity_date=datetime.strptime(maturity_date, "%Y-%m-%d") if maturity_date else None
+        )
+        session.add(new_fd)
+        session.flush()
+
+        # 2. Link to Main Investment Registry
+        new_investment = Investment(
+            name=name,
+            investment_type="fixed_deposit",
+            reference_id=new_fd.id,
+            currency=currency.upper(),
+            notes=notes
+        )
+        session.add(new_investment)
+        session.commit()
+        session.close()
+
+        return {
+            "status": "success",
+            "summary": f"Fixed Deposit '{name}' recorded. Principal: {currency} {principal_amount} @ {interest_rate}."
+        }
+    except Exception as e:
+        session.rollback()
+        session.close()
+        return {"status": "error", "error_message": f"Failed to insert Fixed Deposit: {e}"}
+
+@tool("get_user_investments")
+def get_user_investments() -> Dict[str, Any]:
+    """
+    Retrieves all investment holdings (Assets and Fixed Deposits).
+    """
+    session = Session()
+    investments_data = {"asset": [], "fixed_deposit": []}
+    writer = get_stream_writer()
+
+    try:
+        writer("Retrieving user investments...")
+        all_investments = session.query(Investment).all()
+
+        for inv in all_investments:
+            details = None
+            if inv.investment_type == "asset":
+                details = session.query(Asset).filter(Asset.id == inv.reference_id).first()
+            elif inv.investment_type == "fixed_deposit":
+                details = session.query(FixedDeposit).filter(FixedDeposit.id == inv.reference_id).first()
+
+            if details:
+                # Merge generic Investment info with specific details
+                entry = {
+                    "id": inv.id,
+                    "name": inv.name,
+                    "type": inv.investment_type,
+                    "currency": inv.currency,
+                    "notes": inv.notes,
+                    **{
+                        k: v.isoformat() if isinstance(v, datetime) else str(v)
+                        for k, v in details.__dict__.items()
+                        if not k.startswith("_") and k != "id"
+                    },
+                }
+                investments_data[inv.investment_type].append(entry)
+
+        session.close()
+        return {
+            "status": "success",
+            "summary": "Successfully retrieved portfolio.",
+            "data": investments_data,
+        }
+    except Exception as e:
+        session.close()
+        return {"status": "error", "error_message": f"Failed to retrieve investments: {e}"}
+
+
+@tool("update_asset")
+def update_asset(
+    name: str,
+    quantity: Optional[str] = None,
+    average_buy_price_usd: Optional[str] = None,
+    average_buy_price_user_currency: Optional[str] = None,
+    current_market_price: Optional[str] = None,
+    notes: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Update an existing Asset.
+    
+    Args:
+        name (str): The exact name of the investment.
+        quantity (str): New total quantity.
+        average_buy_price_usd (str): New average buy price in USD.
+        average_buy_price_user_currency (str): New average buy price in User Currency.
+        current_market_price (str): New market price (USD).
+        notes (str): Update notes.
+    """
+    writer = get_stream_writer()
+    session = Session()
+
+    try:
+        investment = session.query(Investment).filter(
+            Investment.name == name, 
+            Investment.investment_type == "asset"
+        ).first()
+
+        if not investment:
+            return {"status": "error", "error_message": f"Asset '{name}' not found."}
+
+        asset = session.query(Asset).filter(Asset.id == investment.reference_id).first()
+        changes = []
+
+        if quantity:
+            asset.quantity = Decimal(quantity)
+            changes.append(f"Qty: {quantity}")
+        if average_buy_price_usd:
+            asset.average_buy_price_usd = Decimal(average_buy_price_usd)
+            changes.append(f"Avg USD: {average_buy_price_usd}")
+        if average_buy_price_user_currency:
+            asset.average_buy_price_user_currency = Decimal(average_buy_price_user_currency)
+            changes.append(f"Avg User Curr: {average_buy_price_user_currency}")
+        if current_market_price:
+            asset.current_market_price = Decimal(current_market_price)
+            changes.append(f"Mkt Price: {current_market_price}")
+        if notes:
+            investment.notes = notes
+            changes.append("Notes updated")
+
+        session.commit()
+        session.close()
+
+        return {"status": "success", "summary": f"Updated '{name}': {', '.join(changes)}"}
+    except Exception as e:
+        session.rollback()
+        session.close()
+        return {"status": "error", "error_message": f"Update failed: {e}"}
+
+
+@tool("update_fixed_deposit")
+def update_fixed_deposit(
+    name: str,
+    principal_amount: Optional[str] = None,
+    interest_rate: Optional[str] = None,
+    maturity_date: Optional[str] = None,
+    is_active: Optional[bool] = None,
+) -> Dict[str, Any]:
+    """
+    Update a Fixed Deposit (Bond/CD).
+    
+    Args:
+        name (str): The exact name of the investment.
+        principal_amount (str): New principal amount.
+        interest_rate (str): New interest rate (decimal).
+        maturity_date (str): New maturity date (YYYY-MM-DD).
+        is_active (bool): Set to False to mark as matured/closed.
+    """
+    writer = get_stream_writer()
+    session = Session()
+
+    try:
+        investment = session.query(Investment).filter(
+            Investment.name == name, 
+            Investment.investment_type == "fixed_deposit"
+        ).first()
+
+        if not investment:
+            return {"status": "error", "error_message": f"Fixed Deposit '{name}' not found."}
+
+        fd = session.query(FixedDeposit).filter(FixedDeposit.id == investment.reference_id).first()
+
+        changes = []
+        if principal_amount:
+            fd.principal_amount = Decimal(principal_amount)
+            changes.append(f"Principal: {principal_amount}")
+        if interest_rate:
+            fd.interest_rate = Decimal(interest_rate)
+            changes.append(f"Rate: {interest_rate}")
+        if maturity_date:
+            fd.maturity_date = datetime.strptime(maturity_date, "%Y-%m-%d")
+            changes.append(f"Maturity: {maturity_date}")
+        if is_active is not None:
+            fd.is_active = is_active
+            changes.append(f"Active: {is_active}")
+
+        session.commit()
+        session.close()
+
+        return {
+            "status": "success", 
+            "summary": f"Updated '{name}': {', '.join(changes)}"
+        }
+    except Exception as e:
+        session.rollback()
+        session.close()
+        return {"status": "error", "error_message": f"Update failed: {e}"}
