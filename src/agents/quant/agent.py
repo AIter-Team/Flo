@@ -46,6 +46,7 @@ quant = create_agent(
 
         # Quant tools
         get_avg_income,
+        read_transactions,
         write_transaction,
         update_balance,
         check_balance,

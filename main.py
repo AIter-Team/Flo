@@ -30,7 +30,7 @@ def setup_database():
 
 
 async def call_agent_async(message: str, profile: dict, thread_id: str):
-    async for _, stream_mode, chunk in flo.astream(
+    async for node, stream_mode, chunk in flo.astream(
         {"messages": [HumanMessage(content=message)], **profile},
         {"configurable": {"thread_id": thread_id}},
         stream_mode=["messages", "custom"],

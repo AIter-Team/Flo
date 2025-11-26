@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 from decimal import Decimal
 
+from sqlalchemy import select, desc, or_, and_
 from langchain.tools import ToolRuntime, tool
 from langgraph.config import get_stream_writer
 from langgraph.types import Command
@@ -12,6 +13,113 @@ from src.config.database import Session
 from src.config.directory import MEMORY_DIR
 from src.database import Transaction
 
+@tool("read_transactions")
+def read_transactions(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    transaction_type: Optional[str] = None,
+    category: Optional[str] = None,
+    search_term: Optional[str] = None,
+    limit: int = 10,
+) -> dict:
+    """
+    Retrieve transaction records from the database with flexible filtering.
+
+    Args:
+        start_date (str, optional): Filter transactions starting from this date (YYYY-MM-DD).
+        end_date (str, optional): Filter transactions up to this date (YYYY-MM-DD).
+        transaction_type (str, optional): Filter by 'income' or 'expense'.
+        category (str, optional): Filter by specific category (e.g., 'Food', 'Transport').
+        search_term (str, optional): Search keyword in description, subcategory, or notes.
+        limit (int): Max number of records to return. Defaults to 10.
+
+    Returns:
+        dict: A dictionary containing status, summary, and a list of transactions.
+    """
+    writer = get_stream_writer()
+    session = Session()
+    results = []
+
+    try:
+        writer("Querying transactions based on parameters...")
+        
+        # Start with a base query ordering by newest first
+        stmt = select(Transaction).order_by(desc(Transaction.timestamp))
+
+        # 1. Date Range Filtering
+        if start_date:
+            try:
+                s_date = datetime.strptime(start_date, "%Y-%m-%d")
+                stmt = stmt.where(Transaction.timestamp >= s_date)
+            except ValueError:
+                return {"status": "error", "error_message": "Invalid start_date format. Use YYYY-MM-DD."}
+        
+        if end_date:
+            try:
+                e_date = datetime.strptime(end_date, "%Y-%m-%d")
+                # Set time to end of day for inclusive comparison
+                e_date = e_date.replace(hour=23, minute=59, second=59)
+                stmt = stmt.where(Transaction.timestamp <= e_date)
+            except ValueError:
+                return {"status": "error", "error_message": "Invalid end_date format. Use YYYY-MM-DD."}
+
+        # 2. Type Filtering (Income/Expense)
+        if transaction_type:
+            stmt = stmt.where(Transaction.type == transaction_type.lower())
+
+        # 3. Category Filtering
+        if category:
+            stmt = stmt.where(Transaction.category == category.lower())
+
+        # 4. Keyword Search (Description, Subcategory, or Notes)
+        if search_term:
+            term = f"%{search_term.lower()}%"
+            stmt = stmt.where(
+                or_(
+                    Transaction.description.ilike(term),
+                    Transaction.subcategory.ilike(term),
+                    Transaction.notes.ilike(term)
+                )
+            )
+
+        # Apply Limit
+        stmt = stmt.limit(limit)
+
+        # Execute
+        transactions = session.execute(stmt).scalars().all()
+        session.close()
+
+        if not transactions:
+            return {"status": "success", "summary": "No transactions found matching criteria.", "transactions": []}
+
+        # Format Output
+        for t in transactions:
+            results.append({
+                "id": t.id,
+                "date": t.timestamp.strftime("%Y-%m-%d"),
+                "amount": f"{t.currency} {t.amount}",
+                "type": t.type,
+                "category": f"{t.category}" + (f" ({t.subcategory})" if t.subcategory else ""),
+                "description": t.description,
+                "notes": t.notes or ""
+            })
+
+        summary_text = f"Found {len(results)} transactions."
+        if start_date: summary_text += f" From {start_date}."
+        if category: summary_text += f" Category: {category}."
+
+        return {
+            "status": "success",
+            "summary": summary_text,
+            "transactions": results,
+        }
+
+    except Exception as e:
+        session.close()
+        return {
+            "status": "error",
+            "error_message": f"Database query failed: {e}",
+        }
 
 @tool("write_transaction")
 def write_transaction(

@@ -1,0 +1,32 @@
+**Task:** Read Transaction History
+
+**Goal:** Retrieve and present financial transaction records from the database based on the user's specific query.
+
+**Steps:**
+1. **Analyze the Request:**
+   - Listen for specific filters:
+     - **Time:** "last week", "yesterday", "in October", "last 5 transactions".
+     - **Category/Type:** "food expenses", "salary income", "transport".
+     - **Keywords:** "Netflix", "coffee", "rent".
+   - If the user asks generally ("show my history"), assume they want the most recent transactions.
+
+2. **Handle Date Context:**
+   - If the user mentions relative dates (e.g., "last month"), **always** call `get_current_time` first to establish "today."
+   - Convert the relative timeframe into specific `start_date` and `end_date` strings (format: YYYY-MM-DD).
+
+3. **Execute Retrieval:**
+   - Call the `read_transactions` tool.
+   - Map the user's intent to the tool arguments:
+     - `start_date` / `end_date`: For time filters.
+     - `transaction_type`: Set to 'income' or 'expense' if specified.
+     - `category`: If a specific budget category is mentioned.
+     - `search_term`: For specific descriptions (e.g., "Uber").
+     - `limit`: Default to 10 unless the user asks for a specific number (e.g., "last 3").
+
+4. **Present the Data:**
+   - **If records are found:** Present them in a clean, readable list or table format. Include Date, Description, Category, and Amount.
+   - **If answering a specific question** (e.g., "Did I pay the internet bill?"): Confirm yes/no based on the search result.
+   - **If no records found:** Inform the user clearly that no transactions matched their criteria.
+
+**Edge Cases:**
+- If the user asks for a calculation (e.g., "How much did I spend on Food?"), first use `read_transactions` to get the list, then calculate the sum mentally before responding, or use `get_avg_income` if they are asking about general averages.
