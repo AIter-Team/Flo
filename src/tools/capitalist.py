@@ -1,3 +1,5 @@
+import os
+import json
 from datetime import datetime
 from decimal import Decimal
 from typing import Any, Dict, Optional
@@ -5,6 +7,7 @@ from typing import Any, Dict, Optional
 from langchain.tools import tool
 from langgraph.config import get_stream_writer
 
+from src.config.directory import MEMORY_DIR
 from src.config.database import Session
 from src.database import (
     Debt,
@@ -490,7 +493,7 @@ def update_asset(
 ) -> Dict[str, Any]:
     """
     Update an existing Asset.
-    
+
     Args:
         name (str): The exact name of the investment.
         quantity (str): New total quantity.
@@ -504,7 +507,7 @@ def update_asset(
 
     try:
         investment = session.query(Investment).filter(
-            Investment.name == name, 
+            Investment.name == name,
             Investment.investment_type == "asset"
         ).first()
 
@@ -550,7 +553,7 @@ def update_fixed_deposit(
 ) -> Dict[str, Any]:
     """
     Update a Fixed Deposit (Bond/CD).
-    
+
     Args:
         name (str): The exact name of the investment.
         principal_amount (str): New principal amount.
@@ -563,7 +566,7 @@ def update_fixed_deposit(
 
     try:
         investment = session.query(Investment).filter(
-            Investment.name == name, 
+            Investment.name == name,
             Investment.investment_type == "fixed_deposit"
         ).first()
 
@@ -590,10 +593,94 @@ def update_fixed_deposit(
         session.close()
 
         return {
-            "status": "success", 
+            "status": "success",
             "summary": f"Updated '{name}': {', '.join(changes)}"
         }
     except Exception as e:
         session.rollback()
         session.close()
         return {"status": "error", "error_message": f"Update failed: {e}"}
+
+
+@tool("calculate_networth")
+def calculate_networth() -> dict[str, Any]:
+    """
+    Calculate the user's total net worth.
+
+    Formula: (Cash Balance + Investment Value) - (Outstanding Debts + Remaining Installments).
+
+    Returns:
+        dict: Breakdown of assets, liabilities, and final net worth.
+    """
+    writer = get_stream_writer()
+    session = Session()
+
+    writer("Calculating Net Worth...")
+
+    try:
+        # 1. Get Cash Balance
+        with open(os.path.join(MEMORY_DIR, "semantic", "profile.json"), "r") as file:
+            profile_data = json.load(file)
+        cash_balance = Decimal(profile_data["finance"].get("balance", 0))
+
+        # 2. Get Investment Value
+        total_investments = Decimal(0)
+
+        # Sum Assets (Stocks/Crypto)
+        # Value = Quantity * Current Market Price (fallback to Buy Price USD)
+        assets = session.query(Asset).all()
+        for asset in assets:
+            price = asset.current_market_price if asset.current_market_price else asset.average_buy_price_usd
+            total_investments += asset.quantity * price
+
+        # Sum Fixed Deposits
+        # Value = Principal Amount (simplified)
+        fds = session.query(FixedDeposit).filter(FixedDeposit.is_active == True).all()
+        for fd in fds:
+            total_investments += fd.principal_amount
+
+        # 3. Get Liability Value
+        total_liabilities = Decimal(0)
+
+        # Sum Debts (Total - Paid)
+        debts = session.query(Debt).all()
+        for debt in debts:
+            outstanding = debt.total_amount - debt.amount_paid
+            if outstanding > 0:
+                total_liabilities += outstanding
+
+        # Sum Installments (Remaining Months * Monthly Payment)
+        installments = session.query(Installment).all()
+        for inst in installments:
+            remaining_months = inst.total_installments - inst.installments_paid
+            if remaining_months > 0:
+                total_liabilities += Decimal(remaining_months) * inst.monthly_payment
+
+        # 4. Final Calculation
+        net_worth = (cash_balance + total_investments) - total_liabilities
+
+        session.close()
+
+        return {
+            "status": "success",
+            "currency": "USD", # Assuming base currency
+            "net_worth": str(net_worth),
+            "breakdown": {
+                "assets": {
+                    "cash": str(cash_balance),
+                    "investments": str(total_investments),
+                    "total_assets": str(cash_balance + total_investments)
+                },
+                "liabilities": {
+                    "outstanding_debt": str(total_liabilities), # Simplified label
+                    "total_liabilities": str(total_liabilities)
+                }
+            }
+        }
+
+    except Exception as e:
+        session.close()
+        return {
+            "status": "error",
+            "error_message": f"Failed to calculate net worth: {e}"
+        }

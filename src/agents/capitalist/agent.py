@@ -41,6 +41,9 @@ capitalist = create_agent(
         check_available_instructions,
         handoff_to_agent,
 
+        # Networth tools
+        calculate_networth,
+
         # Liabilities tools
         insert_debt,
         insert_installment,
