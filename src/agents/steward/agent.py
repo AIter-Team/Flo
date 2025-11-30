@@ -9,9 +9,11 @@ from src.tools import (
     get_task_instruction,
     handoff_to_agent,
 )
-
-from src.tools.quant import read_transactions, check_balance, check_budget
 from src.tools.capitalist import get_user_liabilities
+from src.tools.quant import check_balance, check_budget, read_transactions
+from src.tools.steward import *
+from src.tools.strategist import get_all_goals
+
 
 @dynamic_prompt
 def personalized_prompt(request: ModelRequest) -> str:
@@ -31,6 +33,7 @@ def personalized_prompt(request: ModelRequest) -> str:
         .content
     )
 
+
 steward = create_agent(
     name="steward",
     model=STEWARD.last,
@@ -40,14 +43,15 @@ steward = create_agent(
         get_task_instruction,
         check_available_instructions,
         handoff_to_agent,
-
         # Steward tools
-
-
+        append_wishlist,
+        update_wishlist_status,
+        get_user_wishlist,
         # Other tools
         check_balance,
         check_budget,
         get_user_liabilities,
+        get_all_goals,
         read_transactions,
     ],
     state_schema=State,

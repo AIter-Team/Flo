@@ -1,5 +1,5 @@
-import os
 import json
+import os
 from datetime import datetime
 from decimal import Decimal
 from typing import Any, Dict, Optional
@@ -7,16 +7,16 @@ from typing import Any, Dict, Optional
 from langchain.tools import tool
 from langgraph.config import get_stream_writer
 
-from src.config.directory import MEMORY_DIR
 from src.config.database import Session
+from src.config.directory import MEMORY_DIR
 from src.database import (
+    Asset,
     Debt,
+    FixedDeposit,
     Installment,
+    Investment,
     Liability,
     Subscription,
-    Asset,
-    FixedDeposit,
-    Investment,
 )
 
 
@@ -314,6 +314,7 @@ def get_user_liabilities() -> Dict[str, Any]:
             "error_message": f"Failed to retrieve liabilities: {e}",
         }
 
+
 @tool("insert_asset")
 def insert_asset(
     name: str,
@@ -347,7 +348,7 @@ def insert_asset(
             quantity=Decimal(quantity),
             average_buy_price_usd=Decimal(average_buy_price_usd),
             average_buy_price_user_currency=Decimal(average_buy_price_user_currency),
-            current_market_price=Decimal(average_buy_price_usd) # Default to USD price
+            current_market_price=Decimal(average_buy_price_usd),  # Default to USD price
         )
         session.add(new_asset)
         session.flush()
@@ -357,7 +358,7 @@ def insert_asset(
             investment_type="asset",
             reference_id=new_asset.id,
             currency=currency.upper(),
-            notes=notes
+            notes=notes,
         )
         session.add(new_investment)
         session.commit()
@@ -365,7 +366,7 @@ def insert_asset(
 
         return {
             "status": "success",
-            "summary": f"Asset '{name}' recorded. Qty: {quantity} | Avg USD: {average_buy_price_usd} | Avg {currency}: {average_buy_price_user_currency}"
+            "summary": f"Asset '{name}' recorded. Qty: {quantity} | Avg USD: {average_buy_price_usd} | Avg {currency}: {average_buy_price_user_currency}",
         }
     except Exception as e:
         session.rollback()
@@ -409,7 +410,9 @@ def insert_fixed_deposit(
             principal_amount=Decimal(principal_amount),
             interest_rate=Decimal(interest_rate),
             start_date=datetime.strptime(start_date, "%Y-%m-%d"),
-            maturity_date=datetime.strptime(maturity_date, "%Y-%m-%d") if maturity_date else None
+            maturity_date=datetime.strptime(maturity_date, "%Y-%m-%d")
+            if maturity_date
+            else None,
         )
         session.add(new_fd)
         session.flush()
@@ -420,7 +423,7 @@ def insert_fixed_deposit(
             investment_type="fixed_deposit",
             reference_id=new_fd.id,
             currency=currency.upper(),
-            notes=notes
+            notes=notes,
         )
         session.add(new_investment)
         session.commit()
@@ -428,12 +431,16 @@ def insert_fixed_deposit(
 
         return {
             "status": "success",
-            "summary": f"Fixed Deposit '{name}' recorded. Principal: {currency} {principal_amount} @ {interest_rate}."
+            "summary": f"Fixed Deposit '{name}' recorded. Principal: {currency} {principal_amount} @ {interest_rate}.",
         }
     except Exception as e:
         session.rollback()
         session.close()
-        return {"status": "error", "error_message": f"Failed to insert Fixed Deposit: {e}"}
+        return {
+            "status": "error",
+            "error_message": f"Failed to insert Fixed Deposit: {e}",
+        }
+
 
 @tool("get_user_investments")
 def get_user_investments() -> Dict[str, Any]:
@@ -451,9 +458,15 @@ def get_user_investments() -> Dict[str, Any]:
         for inv in all_investments:
             details = None
             if inv.investment_type == "asset":
-                details = session.query(Asset).filter(Asset.id == inv.reference_id).first()
+                details = (
+                    session.query(Asset).filter(Asset.id == inv.reference_id).first()
+                )
             elif inv.investment_type == "fixed_deposit":
-                details = session.query(FixedDeposit).filter(FixedDeposit.id == inv.reference_id).first()
+                details = (
+                    session.query(FixedDeposit)
+                    .filter(FixedDeposit.id == inv.reference_id)
+                    .first()
+                )
 
             if details:
                 # Merge generic Investment info with specific details
@@ -479,7 +492,10 @@ def get_user_investments() -> Dict[str, Any]:
         }
     except Exception as e:
         session.close()
-        return {"status": "error", "error_message": f"Failed to retrieve investments: {e}"}
+        return {
+            "status": "error",
+            "error_message": f"Failed to retrieve investments: {e}",
+        }
 
 
 @tool("update_asset")
@@ -506,10 +522,11 @@ def update_asset(
     session = Session()
 
     try:
-        investment = session.query(Investment).filter(
-            Investment.name == name,
-            Investment.investment_type == "asset"
-        ).first()
+        investment = (
+            session.query(Investment)
+            .filter(Investment.name == name, Investment.investment_type == "asset")
+            .first()
+        )
 
         if not investment:
             return {"status": "error", "error_message": f"Asset '{name}' not found."}
@@ -524,7 +541,9 @@ def update_asset(
             asset.average_buy_price_usd = Decimal(average_buy_price_usd)
             changes.append(f"Avg USD: {average_buy_price_usd}")
         if average_buy_price_user_currency:
-            asset.average_buy_price_user_currency = Decimal(average_buy_price_user_currency)
+            asset.average_buy_price_user_currency = Decimal(
+                average_buy_price_user_currency
+            )
             changes.append(f"Avg User Curr: {average_buy_price_user_currency}")
         if current_market_price:
             asset.current_market_price = Decimal(current_market_price)
@@ -536,7 +555,10 @@ def update_asset(
         session.commit()
         session.close()
 
-        return {"status": "success", "summary": f"Updated '{name}': {', '.join(changes)}"}
+        return {
+            "status": "success",
+            "summary": f"Updated '{name}': {', '.join(changes)}",
+        }
     except Exception as e:
         session.rollback()
         session.close()
@@ -565,15 +587,25 @@ def update_fixed_deposit(
     session = Session()
 
     try:
-        investment = session.query(Investment).filter(
-            Investment.name == name,
-            Investment.investment_type == "fixed_deposit"
-        ).first()
+        investment = (
+            session.query(Investment)
+            .filter(
+                Investment.name == name, Investment.investment_type == "fixed_deposit"
+            )
+            .first()
+        )
 
         if not investment:
-            return {"status": "error", "error_message": f"Fixed Deposit '{name}' not found."}
+            return {
+                "status": "error",
+                "error_message": f"Fixed Deposit '{name}' not found.",
+            }
 
-        fd = session.query(FixedDeposit).filter(FixedDeposit.id == investment.reference_id).first()
+        fd = (
+            session.query(FixedDeposit)
+            .filter(FixedDeposit.id == investment.reference_id)
+            .first()
+        )
 
         changes = []
         if principal_amount:
@@ -594,7 +626,7 @@ def update_fixed_deposit(
 
         return {
             "status": "success",
-            "summary": f"Updated '{name}': {', '.join(changes)}"
+            "summary": f"Updated '{name}': {', '.join(changes)}",
         }
     except Exception as e:
         session.rollback()
@@ -630,7 +662,11 @@ def calculate_networth() -> dict[str, Any]:
         # Value = Quantity * Current Market Price (fallback to Buy Price USD)
         assets = session.query(Asset).all()
         for asset in assets:
-            price = asset.current_market_price if asset.current_market_price else asset.average_buy_price_usd
+            price = (
+                asset.current_market_price
+                if asset.current_market_price
+                else asset.average_buy_price_usd
+            )
             total_investments += asset.quantity * price
 
         # Sum Fixed Deposits
@@ -663,24 +699,24 @@ def calculate_networth() -> dict[str, Any]:
 
         return {
             "status": "success",
-            "currency": "USD", # Assuming base currency
+            "currency": "USD",  # Assuming base currency
             "net_worth": str(net_worth),
             "breakdown": {
                 "assets": {
                     "cash": str(cash_balance),
                     "investments": str(total_investments),
-                    "total_assets": str(cash_balance + total_investments)
+                    "total_assets": str(cash_balance + total_investments),
                 },
                 "liabilities": {
-                    "outstanding_debt": str(total_liabilities), # Simplified label
-                    "total_liabilities": str(total_liabilities)
-                }
-            }
+                    "outstanding_debt": str(total_liabilities),  # Simplified label
+                    "total_liabilities": str(total_liabilities),
+                },
+            },
         }
 
     except Exception as e:
         session.close()
         return {
             "status": "error",
-            "error_message": f"Failed to calculate net worth: {e}"
+            "error_message": f"Failed to calculate net worth: {e}",
         }

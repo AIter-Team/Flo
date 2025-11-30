@@ -1,14 +1,12 @@
-from langchain.tools import tool, ToolRuntime
 import uuid
 
+from langchain.tools import ToolRuntime, tool
 from typing_extensions import Optional
+
 
 @tool
 def create_financial_goal(
-    description: str, 
-    deadline: str,
-    notes: Optional[str],
-    runtime: ToolRuntime
+    description: str, deadline: str, notes: Optional[str], runtime: ToolRuntime
 ):
     """Create and save goal to memory
 
@@ -20,10 +18,9 @@ def create_financial_goal(
     Returns:
         dict: A dictionary containing the transaction record status.
     """
-    
-    
+
     writer = runtime.stream_writer
-    user_name = runtime.state['user_name']
+    user_name = runtime.state["user_name"]
     namespace = (user_name, "goals")
     id = uuid.uuid4()
     store = runtime.store
@@ -50,11 +47,12 @@ def create_financial_goal(
         ),
     }
 
+
 @tool
 def get_all_goals(runtime: ToolRuntime):
     """Get all goals from memory"""
     writer = runtime.stream_writer
-    user_name = runtime.state['user_name']
+    user_name = runtime.state["user_name"]
     namespace = (user_name, "goals")
     store = runtime.store
 
@@ -65,10 +63,10 @@ def get_all_goals(runtime: ToolRuntime):
         goals.append(
             {
                 "id": goal.key,
-                "goal": goal.value['description'],
-                "deadline": goal.value['deadline'],
-                "status": goal.value['status'],
-                "notes": goal.value['notes'],
+                "goal": goal.value["description"],
+                "deadline": goal.value["deadline"],
+                "status": goal.value["status"],
+                "notes": goal.value["notes"],
             }
         )
 

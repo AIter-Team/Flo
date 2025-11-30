@@ -43,7 +43,6 @@ quant = create_agent(
         get_task_instruction,
         check_available_instructions,
         handoff_to_agent,
-
         # Quant tools
         get_avg_income,
         read_transactions,

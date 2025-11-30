@@ -3,13 +3,15 @@ from langchain.agents.middleware import ModelRequest, dynamic_prompt
 
 from src.agents.state import State
 from src.config.agents import STRATEGIST
+from src.tools.capitalist import get_user_investments, get_user_liabilities
 from src.tools.essential import (
     check_available_instructions,
     get_current_time,
     get_task_instruction,
     handoff_to_agent,
 )
-from src.tools.strategist import create_financial_goal, get_all_goals
+from src.tools.quant import check_balance, check_budget
+from src.tools.strategist import *
 
 
 @dynamic_prompt
@@ -43,6 +45,7 @@ strategist = create_agent(
         # Strategist tools
         create_financial_goal,
         get_all_goals,
+        # Other tools
     ],
     state_schema=State,
     middleware=[personalized_prompt],

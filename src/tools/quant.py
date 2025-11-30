@@ -3,15 +3,16 @@ import os
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import select, desc, or_, and_
 from langchain.tools import ToolRuntime, tool
 from langgraph.config import get_stream_writer
 from langgraph.types import Command
+from sqlalchemy import desc, or_, select
 from typing_extensions import Optional
 
 from src.config.database import Session
 from src.config.directory import MEMORY_DIR
 from src.database import Transaction
+
 
 @tool("read_transactions")
 def read_transactions(
@@ -42,7 +43,7 @@ def read_transactions(
 
     try:
         writer("Querying transactions based on parameters...")
-        
+
         # Start with a base query ordering by newest first
         stmt = select(Transaction).order_by(desc(Transaction.timestamp))
 
@@ -52,8 +53,11 @@ def read_transactions(
                 s_date = datetime.strptime(start_date, "%Y-%m-%d")
                 stmt = stmt.where(Transaction.timestamp >= s_date)
             except ValueError:
-                return {"status": "error", "error_message": "Invalid start_date format. Use YYYY-MM-DD."}
-        
+                return {
+                    "status": "error",
+                    "error_message": "Invalid start_date format. Use YYYY-MM-DD.",
+                }
+
         if end_date:
             try:
                 e_date = datetime.strptime(end_date, "%Y-%m-%d")
@@ -61,7 +65,10 @@ def read_transactions(
                 e_date = e_date.replace(hour=23, minute=59, second=59)
                 stmt = stmt.where(Transaction.timestamp <= e_date)
             except ValueError:
-                return {"status": "error", "error_message": "Invalid end_date format. Use YYYY-MM-DD."}
+                return {
+                    "status": "error",
+                    "error_message": "Invalid end_date format. Use YYYY-MM-DD.",
+                }
 
         # 2. Type Filtering (Income/Expense)
         if transaction_type:
@@ -78,7 +85,7 @@ def read_transactions(
                 or_(
                     Transaction.description.ilike(term),
                     Transaction.subcategory.ilike(term),
-                    Transaction.notes.ilike(term)
+                    Transaction.notes.ilike(term),
                 )
             )
 
@@ -90,23 +97,32 @@ def read_transactions(
         session.close()
 
         if not transactions:
-            return {"status": "success", "summary": "No transactions found matching criteria.", "transactions": []}
+            return {
+                "status": "success",
+                "summary": "No transactions found matching criteria.",
+                "transactions": [],
+            }
 
         # Format Output
         for t in transactions:
-            results.append({
-                "id": t.id,
-                "date": t.timestamp.strftime("%Y-%m-%d"),
-                "amount": f"{t.currency} {t.amount}",
-                "type": t.type,
-                "category": f"{t.category}" + (f" ({t.subcategory})" if t.subcategory else ""),
-                "description": t.description,
-                "notes": t.notes or ""
-            })
+            results.append(
+                {
+                    "id": t.id,
+                    "date": t.timestamp.strftime("%Y-%m-%d"),
+                    "amount": f"{t.currency} {t.amount}",
+                    "type": t.type,
+                    "category": f"{t.category}"
+                    + (f" ({t.subcategory})" if t.subcategory else ""),
+                    "description": t.description,
+                    "notes": t.notes or "",
+                }
+            )
 
         summary_text = f"Found {len(results)} transactions."
-        if start_date: summary_text += f" From {start_date}."
-        if category: summary_text += f" Category: {category}."
+        if start_date:
+            summary_text += f" From {start_date}."
+        if category:
+            summary_text += f" Category: {category}."
 
         return {
             "status": "success",
@@ -121,66 +137,71 @@ def read_transactions(
             "error_message": f"Database query failed: {e}",
         }
 
+
 def time_value_calculator(amount: str) -> dict:
     """
     Calculates the 'Life Hours' or time cost of a specific expense amount.
     Uses the user's average salary and a fixed real-time monthly conversion (720 hours)
     to determine the hourly rate of the user's life energy.
-    
+
     Args:
         amount (str): The expense amount to calculate time value for (e.g. '120.50').
-        
+
     Returns:
         dict: Contains the formatted insight string describing the time cost.
     """
     writer = get_stream_writer()
-    
+
     try:
-        clean_amount = amount.replace(',', '').replace('$', '').strip()
-        clean_amount = ''.join([c for c in clean_amount if c.isdigit() or c == '.'])
+        clean_amount = amount.replace(",", "").replace("$", "").strip()
+        clean_amount = "".join([c for c in clean_amount if c.isdigit() or c == "."])
         expense_amount = float(clean_amount)
     except ValueError:
         return {"status": "error", "error_message": "Invalid amount provided."}
 
     with open(os.path.join(MEMORY_DIR, "semantic", "profile.json"), "r") as file:
         data = json.load(file)
-    
+
     finance_data = data.get("finance", {})
     avg_salary = finance_data.get("avg_salary", 0)
     currency = data.get("profile", {}).get("user_currency", "USD")
-    
+
     if avg_salary <= 0:
-         return {
-             "status": "error", 
-             "error_message": "Average salary is not set in your profile. Please set your income first to use this feature."
-         }
+        return {
+            "status": "error",
+            "error_message": "Average salary is not set in your profile. Please set your income first to use this feature.",
+        }
 
     TOTAL_HOURS_PER_MONTH = 720
-    
+
     hourly_rate = avg_salary / TOTAL_HOURS_PER_MONTH
-    
+
     if hourly_rate <= 0:
-        return {"status": "error", "error_message": "Calculated hourly rate is invalid."}
-    
+        return {
+            "status": "error",
+            "error_message": "Calculated hourly rate is invalid.",
+        }
+
     hours_cost = expense_amount / hourly_rate
-    
+
     writer("Calculating time value...")
-    
+
     if hours_cost < 1:
         time_str = f"{int(hours_cost * 60)} minutes"
     elif hours_cost < 24:
-         time_str = f"{hours_cost:.1f} hours"
+        time_str = f"{hours_cost:.1f} hours"
     else:
-        days = hours_cost / 24 
+        days = hours_cost / 24
         time_str = f"{days:.1f} days"
 
     insight = f"{currency} {expense_amount:,.2f} is equivalent to {time_str} of your real life time."
-    
+
     return {
         "insight": insight,
         "hours_cost": hours_cost,
-        "hourly_rate_used": hourly_rate
+        "hourly_rate_used": hourly_rate,
     }
+
 
 @tool("write_transaction")
 def write_transaction(
@@ -336,18 +357,18 @@ def get_avg_income() -> dict[str, str]:
     Calculates the 'Life Hours' or time cost of a specific expense amount.
     Uses the user's average salary and a fixed real-time monthly conversion (720 hours)
     to determine the hourly rate of the user's life energy.
-    
+
     Args:
         amount (str): The expense amount to calculate time value for (e.g. '120.50').
-        
+
     Returns:
         dict: Contains the formatted insight string describing the time cost.
     """
     writer = get_stream_writer()
-    
+
     try:
-        clean_amount = amount.replace(',', '').replace('$', '').strip()
-        clean_amount = ''.join([c for c in clean_amount if c.isdigit() or c == '.'])
+        clean_amount = amount.replace(",", "").replace("$", "").strip()
+        clean_amount = "".join([c for c in clean_amount if c.isdigit() or c == "."])
         expense_amount = float(clean_amount)
     except ValueError:
         return {"status": "error", "error_message": "Invalid amount provided."}
@@ -355,41 +376,44 @@ def get_avg_income() -> dict[str, str]:
     writer("Retrieving user income data...")
     with open(os.path.join(MEMORY_DIR, "semantic", "profile.json"), "r") as file:
         data = json.load(file)
-    
+
     finance_data = data.get("finance", {})
     avg_salary = finance_data.get("avg_salary", 0)
     currency = data.get("profile", {}).get("user_currency", "USD")
-    
+
     if avg_salary <= 0:
-         return {
-             "status": "error", 
-             "error_message": "Average salary is not set in your profile. Please set your income first to use this feature."
-         }
+        return {
+            "status": "error",
+            "error_message": "Average salary is not set in your profile. Please set your income first to use this feature.",
+        }
 
     TOTAL_HOURS_PER_MONTH = 720
-    
+
     hourly_rate = avg_salary / TOTAL_HOURS_PER_MONTH
-    
+
     if hourly_rate <= 0:
-        return {"status": "error", "error_message": "Calculated hourly rate is invalid."}
+        return {
+            "status": "error",
+            "error_message": "Calculated hourly rate is invalid.",
+        }
 
     hours_cost = expense_amount / hourly_rate
-    
+
     writer("Calculating time value...")
-    
+
     if hours_cost < 1:
         time_str = f"{int(hours_cost * 60)} minutes"
     elif hours_cost < 24:
-         time_str = f"{hours_cost:.1f} hours"
+        time_str = f"{hours_cost:.1f} hours"
     else:
-        days = hours_cost / 24 
+        days = hours_cost / 24
         time_str = f"{days:.1f} days"
 
     insight = f"{currency} {expense_amount:,.2f} is equivalent to {time_str} of your real life time."
-    
+
     return {
         "status": "success",
         "insight": insight,
         "hours_cost": hours_cost,
-        "hourly_rate_used": hourly_rate
+        "hourly_rate_used": hourly_rate,
     }
