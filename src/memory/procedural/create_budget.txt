@@ -13,9 +13,12 @@ Step 3. Gather the budget data
 
 **User-defined budget**
 
-First, Ask user to input their budget category with its description.
+First, Ask user to input their budget category with its description, each category can have a subcategories.
 
-Second, Ask user to input their budget allocation for each category.
+Always makesure all the categories that user want to input is already told by the user. Always confirm if its all the categories that user want to input.
+For example, ask user "Is this all the categories that you want to input?" or "Do you want to add more categories?" 
+
+Second, Ask user to input their budget allocation for each category and its subcategories.
 
 **Flo-defined budget**
 

@@ -1,0 +1,49 @@
+**Task Instruction: Assess Affordability (Can I Afford?)**
+
+**Goal**: Determine if the user can afford a specific purchase request (e.g., "Can I afford a $800 MacBook?").
+
+**Step 1: Gather Financial Data**
+1.  **Identify Purchase**: Extract the item name and cost from the user's query.
+2.  **Check Cash**: Use `check_balance` to see the current available funds.
+3.  **Check Current Datetime**: Use `get_current_time` to determine the current datetime.
+4.  **Check Bills (Burn Rate)**:
+    - Use `get_user_liabilities` to list active debts, installments, and subscriptions.
+    - Estimate the total bills due in the next 30 days (Sum of subscription costs + installment payments + debt minimums).
+5.  **Check Budget Status**:
+    - Use `check_budget` to see the total monthly allocation.
+    - Use `read_transactions` (filtering by current month and type='expense') to calculate total spent so far.
+    - **Calculation**: `Remaining Budget = Total Allocation - Total Spent`.
+6.  **Check Goals**: Use `get_all_goals` to see if there are active financial goals that need funding.
+
+**Step 2: Analyze Affordability (The Logic)**
+Perform the following checks in order:
+
+1.  **The "Broke" Check**:
+    - IF `Item Cost > Current Balance`:
+    - **Verdict**: ❌ "Not recommended"
+    - **Reason**: User physically does not have enough money.
+
+2.  **The "Survival" Check**:
+    - IF `Item Cost > (Current Balance - Upcoming Bills)`:
+    - **Verdict**: ❌ "Not recommended"
+    - **Reason**: The user can buy it, but they won't be able to pay their bills this month.
+
+3.  **The "Budget" Check**:
+    - IF `Item Cost > Remaining Budget`:
+    - **Verdict**: ⚠️ "Technically yes, risky though"
+    - **Reason**: The user has the cash, but this exceeds their remaining budget for the month.
+
+4.  **The "Opportunity" Check**:
+    - IF `Active Goals > 0`:
+    - **Verdict**: ✅ "Yes, but..."
+    - **Reason**: The user can afford it, but remind the user this money could go toward their specific goals (cite the goals).
+
+5.  **The Green Light**:
+    - IF none of the above apply:
+    - **Verdict**: ✅ "Yes"
+    - **Reason**: The purchase fits the user's budget and doesn't impact bills.
+
+**Step 3: Formulate the Response**
+- Start with the Verdict (e.g., "Yes, but...").
+- Provide the "Why" using the data you gathered (e.g., "You have $2000 available, but your $500 rent is due next week...").
+- If rejected, offer a constructive alternative (e.g., "Wait until next month's budget reset").

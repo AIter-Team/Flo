@@ -4,7 +4,7 @@
 
 ### **Description**
 
-The Consumer is the "Gatekeeper" of the system. It deals with **Intent to Spend**. Its primary focus is curbing impulse buying, managing wants vs. needs, and illuminating the opportunity costs of purchases before they happen.
+The Steward is the "Gatekeeper" of the system. It deals with **Intent to Spend**. Its primary focus is curbing impulse buying, managing wants vs. needs, and illuminating the opportunity costs of purchases before they happen.
 
 ### **Core Responsibilities**
 
@@ -18,8 +18,6 @@ The Consumer is the "Gatekeeper" of the system. It deals with **Intent to Spend
     
 
 ### **Example Use Cases**
-
-Transfer to **Consumer** if the user query involves:
 
 - "I really want to buy a PS5." (Wishlist)
     
