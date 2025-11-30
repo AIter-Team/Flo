@@ -121,6 +121,67 @@ def read_transactions(
             "error_message": f"Database query failed: {e}",
         }
 
+def time_value_calculator(amount: str) -> dict:
+    """
+    Calculates the 'Life Hours' or time cost of a specific expense amount.
+    Uses the user's average salary and a fixed real-time monthly conversion (720 hours)
+    to determine the hourly rate of the user's life energy.
+    
+    Args:
+        amount (str): The expense amount to calculate time value for (e.g. '120.50').
+        
+    Returns:
+        dict: Contains the formatted insight string describing the time cost.
+    """
+    writer = get_stream_writer()
+    
+    try:
+        clean_amount = amount.replace(',', '').replace('$', '').strip()
+        clean_amount = ''.join([c for c in clean_amount if c.isdigit() or c == '.'])
+        expense_amount = float(clean_amount)
+    except ValueError:
+        return {"status": "error", "error_message": "Invalid amount provided."}
+
+    with open(os.path.join(MEMORY_DIR, "semantic", "profile.json"), "r") as file:
+        data = json.load(file)
+    
+    finance_data = data.get("finance", {})
+    avg_salary = finance_data.get("avg_salary", 0)
+    currency = data.get("profile", {}).get("user_currency", "USD")
+    
+    if avg_salary <= 0:
+         return {
+             "status": "error", 
+             "error_message": "Average salary is not set in your profile. Please set your income first to use this feature."
+         }
+
+    TOTAL_HOURS_PER_MONTH = 720
+    
+    hourly_rate = avg_salary / TOTAL_HOURS_PER_MONTH
+    
+    if hourly_rate <= 0:
+        return {"status": "error", "error_message": "Calculated hourly rate is invalid."}
+    
+    hours_cost = expense_amount / hourly_rate
+    
+    writer("Calculating time value...")
+    
+    if hours_cost < 1:
+        time_str = f"{int(hours_cost * 60)} minutes"
+    elif hours_cost < 24:
+         time_str = f"{hours_cost:.1f} hours"
+    else:
+        days = hours_cost / 24 
+        time_str = f"{days:.1f} days"
+
+    insight = f"{currency} {expense_amount:,.2f} is equivalent to {time_str} of your real life time."
+    
+    return {
+        "insight": insight,
+        "hours_cost": hours_cost,
+        "hourly_rate_used": hourly_rate
+    }
+
 @tool("write_transaction")
 def write_transaction(
     timestamp: str,
@@ -171,16 +232,30 @@ def write_transaction(
         session.commit()
         session.close()
 
-        return {
-            "status": "success",
-            "summary": (
-                "Transaction recorded successfully.\n"
-                f"Type: {type.upper()} | Amount: {currency.upper()} {amount_d}\n"
-                f"Description: {description}\n"
-                f"Category: {category.title()} ({subcategory.title() if subcategory else 'N/A'})\n"
-                f"Timestamp: {timestamp_dt.strftime('%Y-%m-%d')}"
-            ),
-        }
+        if type.lower() == "expense":
+            return {
+                "status": "success",
+                "time_value_calculator": time_value_calculator(amount),
+                "summary": (
+                    "Transaction recorded successfully.\n"
+                    f"Type: {type.upper()} | Amount: {currency.upper()} {amount_d}\n"
+                    f"Description: {description}\n"
+                    f"Category: {category.title()} ({subcategory.title() if subcategory else 'N/A'})\n"
+                    f"Timestamp: {timestamp_dt.strftime('%Y-%m-%d')}"
+                ),
+            }
+        else:
+            return {
+                "status": "success",
+                "summary": (
+                    "Transaction recorded successfully.\n"
+                    f"Type: {type.upper()} | Amount: {currency.upper()} {amount_d}\n"
+                    f"Description: {description}\n"
+                    f"Category: {category.title()} ({subcategory.title() if subcategory else 'N/A'})\n"
+                    f"Timestamp: {timestamp_dt.strftime('%Y-%m-%d')}"
+                ),
+            }
+
     except Exception as e:
         session.rollback()
         session.close()
@@ -257,6 +332,64 @@ def get_avg_income() -> dict[str, str]:
         data = json.load(file)
 
     return {"status": "success", "avg_income": data["finance"].get("avg_salary", 0)}
+    """
+    Calculates the 'Life Hours' or time cost of a specific expense amount.
+    Uses the user's average salary and a fixed real-time monthly conversion (720 hours)
+    to determine the hourly rate of the user's life energy.
+    
+    Args:
+        amount (str): The expense amount to calculate time value for (e.g. '120.50').
+        
+    Returns:
+        dict: Contains the formatted insight string describing the time cost.
+    """
+    writer = get_stream_writer()
+    
+    try:
+        clean_amount = amount.replace(',', '').replace('$', '').strip()
+        clean_amount = ''.join([c for c in clean_amount if c.isdigit() or c == '.'])
+        expense_amount = float(clean_amount)
+    except ValueError:
+        return {"status": "error", "error_message": "Invalid amount provided."}
 
-def time_value_calculator():
-    pass
+    writer("Retrieving user income data...")
+    with open(os.path.join(MEMORY_DIR, "semantic", "profile.json"), "r") as file:
+        data = json.load(file)
+    
+    finance_data = data.get("finance", {})
+    avg_salary = finance_data.get("avg_salary", 0)
+    currency = data.get("profile", {}).get("user_currency", "USD")
+    
+    if avg_salary <= 0:
+         return {
+             "status": "error", 
+             "error_message": "Average salary is not set in your profile. Please set your income first to use this feature."
+         }
+
+    TOTAL_HOURS_PER_MONTH = 720
+    
+    hourly_rate = avg_salary / TOTAL_HOURS_PER_MONTH
+    
+    if hourly_rate <= 0:
+        return {"status": "error", "error_message": "Calculated hourly rate is invalid."}
+
+    hours_cost = expense_amount / hourly_rate
+    
+    writer("Calculating time value...")
+    
+    if hours_cost < 1:
+        time_str = f"{int(hours_cost * 60)} minutes"
+    elif hours_cost < 24:
+         time_str = f"{hours_cost:.1f} hours"
+    else:
+        days = hours_cost / 24 
+        time_str = f"{days:.1f} days"
+
+    insight = f"{currency} {expense_amount:,.2f} is equivalent to {time_str} of your real life time."
+    
+    return {
+        "status": "success",
+        "insight": insight,
+        "hours_cost": hours_cost,
+        "hourly_rate_used": hourly_rate
+    }
