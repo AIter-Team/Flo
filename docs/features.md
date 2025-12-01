@@ -20,7 +20,7 @@ Flo is a comprehensive personal finance system powered by a multi-agent AI archi
 
 ### Liability Management
 Flo helps you manage and pay down your debts efficiently:
-- **Debts**: Track high-interest debts like credit cards and loans. Supports the **Avalanche Method** for efficient repayment.
+- **Debts**: Track high-interest debts like credit cards and loans.
 - **Installments**: Manage Buy Now Pay Later (BNPL) plans and other installment-based purchases.
 - **Subscriptions**: Keep track of recurring subscriptions (Netflix, Gym, etc.) and their billing cycles.
 

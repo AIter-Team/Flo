@@ -11,7 +11,7 @@ Flo is an intelligent, agentic system designed to help you manage your entire fi
 - **Persistent Memory**: Remembers your preferences, financial history, and past conversations.
 - **Conversational Interface**: Natural language interaction for all your financial questions.
 
-For a detailed breakdown of all features, see [docs/features.md](docs/features.md).
+For a detailed breakdown of all features, see [`docs/features`](docs/features.md).
 
 ## Getting Started
 
