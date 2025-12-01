@@ -7,23 +7,6 @@
     "finance": {
         "balance": 0,
         "avg_salary": 0,
-        "budget": {
-            "Food": {
-                "description": "User defined budget category Food",
-                "allocation": 500000
-            },
-            "Transport": {
-                "description": "User defined budget category Transport",
-                "allocation": 300000
-            },
-            "Saving Spending": {
-                "description": "User defined budget category Saving Spending",
-                "allocation": 200000
-            },
-            "Living": {
-                "description": "User defined budget category Living",
-                "allocation": 1000000
-            }
-        }
+        "budget": {}
     }
 }
