@@ -4,14 +4,14 @@ Flo is an intelligent, agentic system designed to help you manage your entire fi
 
 ## Key Features
 
-- **Multi-Agent Architecture**: A team of specialized agents working together:
-    - **Root**: Orchestrates the conversation and routes tasks to the right specialist.
-    - **Quant**: Analyzes financial data, transactions, and budgets.
-    - **Capitalist**: Provides investment advice and wealth generation strategies.
-    - **Strategist**: Helps with long-term financial planning and goal setting.
-    - **Steward**: Oversees the process and ensures your financial well-being.
+- **Daily Operations & Cash Flow**: Track income/expenses, manage budgets, and calculate the "time cost" of purchases.
+- **Wealth Generation**: Manage liabilities (debts, subscriptions) and track assets (stocks, crypto, fixed deposits) with real-time net worth analysis.
+- **Strategic Planning**: Set and track financial goals.
+- **Well-being & Oversight**: Manage wishlists and get smart "Can I Afford?" assessments before making purchases.
 - **Persistent Memory**: Remembers your preferences, financial history, and past conversations.
 - **Conversational Interface**: Natural language interaction for all your financial questions.
+
+For a detailed breakdown of all features, see [docs/features.md](docs/features.md).
 
 ## Getting Started
 
