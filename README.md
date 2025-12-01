@@ -1,4 +1,4 @@
-# Flo App
+# Flo: Financial Life Orchestrator
 
 Flo is an intelligent, agentic system designed to help you manage your entire financial life. Flo's role is not just as an assistant, but as a proactive partner in your financial decisions. Built with [LangChain](https://langchain.com/) and [LangGraph](https://langchain-ai.github.io/langgraph/), it leverages a team of specialized AI agents to provide comprehensive financial advice.
 
