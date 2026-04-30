@@ -1,0 +1,60 @@
+from langchain.agents import create_agent
+from langchain.agents.middleware import ModelRequest, dynamic_prompt
+
+from src.agents.state import State, Context
+from src.config.agents import STEWARD
+from src.tools.essential import (
+    check_available_instructions,
+    get_current_time,
+    get_task_instruction,
+    handoff_to_agent,
+)
+from src.tools.capitalist import get_user_liabilities
+from src.tools.quant import check_balance, check_budget, read_transactions
+from src.tools.steward import *
+from src.tools.strategist import get_all_goals
+
+
+@dynamic_prompt
+def personalized_prompt(request: ModelRequest) -> str:
+    user_name = request.runtime.context.user_name
+    user_language = request.runtime.context.user_language
+    user_currency = request.runtime.context.user_currency
+
+    return (
+        STEWARD.first.invoke(
+            {
+                "user_currency": user_currency,
+                "user_language": user_language,
+                "user_name": user_name,
+            }
+        )
+        .messages[0]
+        .content
+    )
+
+
+steward = create_agent(
+    name="steward",
+    model=STEWARD.last,
+    tools=[
+        # Essential tools
+        get_current_time,
+        get_task_instruction,
+        check_available_instructions,
+        handoff_to_agent,
+        # Steward tools
+        append_wishlist,
+        update_wishlist_status,
+        get_user_wishlist,
+        # Other tools
+        check_balance,
+        check_budget,
+        get_user_liabilities,
+        get_all_goals,
+        read_transactions,
+    ],
+    state_schema=State,
+    context_schema=Context,
+    middleware=[personalized_prompt],
+)
